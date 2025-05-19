@@ -609,7 +609,7 @@ export default function PetForm() {
           PET STATE
         </Typography>
         <Typography className='text-center italic underline' variant='subtitle2'>
-          POST: /api/chat
+          POST: /api/pet_status
         </Typography>
         <hr className='mt-2 mb-2'/>
 

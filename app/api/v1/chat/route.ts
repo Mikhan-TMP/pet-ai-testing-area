@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     
     // console.log('Chat request form data:', Object.fromEntries(params.entries()));
 
-    const response = await fetch('http://192.168.1.141:8084/api/v1/chat', {
+    const response = await fetch('http://13.125.165.234:8084/api/v1/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
