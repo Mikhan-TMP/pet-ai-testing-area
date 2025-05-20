@@ -5,7 +5,7 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization');
     // console.log('Fetching pets with auth header:', authHeader ? 'Present' : 'Missing');
     
-    const response = await fetch('http://43.201.147.104/aipet/api/v1/pets', {
+    const response = await fetch('http://54.180.147.58/aipet/api/v1/pets', {
       method: 'GET',
       headers: {
         'Authorization': authHeader || '',
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const authHeader = request.headers.get('authorization');
     
-    const response = await fetch('http://43.201.147.104/aipet/api/v1/pets', {
+    const response = await fetch('http://54.180.147.58/aipet/api/v1/pets', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

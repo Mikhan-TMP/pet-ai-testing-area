@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const response = await fetch('http://43.201.147.104/aipet/api/v1/auth/login', {
+    const response = await fetch('http://54.180.147.58/aipet/api/v1/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
