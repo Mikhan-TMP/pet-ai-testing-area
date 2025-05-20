@@ -1,5 +1,5 @@
 'use client';
-
+import { ToastContainer, toast } from 'react-toastify';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -210,9 +210,11 @@ export default function PetForm() {
     }
   };
 
-  const handleLogin = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
+const handleLogin = async (event: React.FormEvent) => {
+  event.preventDefault();
+
+  await toast.promise(
+    (async () => {
       console.log('Attempting login with:', {
         url: '/api/auth/login',
         username: loginData.username,
@@ -237,9 +239,8 @@ export default function PetForm() {
 
       const data = await response.json();
       console.log('Response data:', data);
-      
+
       if (data.token && data.user_id) {
-        // Set the token and user ID
         setAuthToken(data.token);
         setUserId(data.user_id);
         setLoginResponse(JSON.stringify({
@@ -254,36 +255,45 @@ export default function PetForm() {
           details: 'Response missing required token or user_id'
         }, null, 2));
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      let errorMessage = 'Unknown error occurred';
-      let errorDetails = 'Please check your network connection and try again';
+    })(),
+    {
+      pending: 'Logging in...',
+      success: 'Login successful!',
+      error: {
+        render({ data }) {
+          let errorMessage = 'Unknown error occurred';
+          let errorDetails = 'Please check your network connection and try again';
 
-      if (error instanceof Error) {
-        errorMessage = error.message;
-        if (errorMessage.includes('Failed to fetch')) {
-          errorDetails = 'Unable to connect to the server. This could be due to:\n' +
-            '1. Network connectivity issues\n' +
-            '2. Server is not running or not accessible\n\n' +
-            'Troubleshooting steps:\n' +
-            '1. Open browser developer tools (F12)\n' +
-            '2. Check the Network tab\n' +
-            '3. Look for the failed request\n' +
-            '4. Check if the server is responding\n' +
-            '5. Verify the server URL is correct\n\n' +
-            'Please check the server configuration and try again.';
+          if (data instanceof Error) {
+            errorMessage = data.message;
+            if (errorMessage.includes('Failed to fetch')) {
+              errorDetails = 'Unable to connect to the server. This could be due to:\n' +
+                '1. Network connectivity issues\n' +
+                '2. Server is not running or not accessible\n\n' +
+                'Troubleshooting steps:\n' +
+                '1. Open browser developer tools (F12)\n' +
+                '2. Check the Network tab\n' +
+                '3. Look for the failed request\n' +
+                '4. Check if the server is responding\n' +
+                '5. Verify the server URL is correct\n\n' +
+                'Please check the server configuration and try again.';
+            }
+          }
+
+          setLoginResponse(JSON.stringify({
+            status: 'error',
+            message: 'Error during login',
+            error: errorMessage,
+            details: errorDetails,
+            timestamp: new Date().toISOString()
+          }, null, 2));
+
+          return `Login failed: ${errorMessage}`;
         }
       }
-
-      setLoginResponse(JSON.stringify({
-        status: 'error',
-        message: 'Error during login',
-        error: errorMessage,
-        details: errorDetails,
-        timestamp: new Date().toISOString()
-      }, null, 2));
     }
-  };
+  );
+};
 
   const handleSliderChange = (field: keyof FormData) => (_event: Event, newValue: number | number[]) => {
     setFormData({
@@ -334,38 +344,68 @@ export default function PetForm() {
     console.log('Auth token:', authToken ? 'Present' : 'Missing');
     console.log('Selected pet:', pets.find(p => p.pet_id === formData.selected_pet_id));
 
-    try {
-      const response = await fetch('/api/v1/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Bearer ${authToken}`,
-          'Accept': 'application/json'
-        },
-        body: chatFormData.toString(),
-      });
+    await toast.promise(
+      (async () => {
+        const response = await fetch('/api/v1/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${authToken}`,
+            'Accept': 'application/json'
+          },
+          body: chatFormData.toString(),
+        });
 
-      console.log('Chat response status:', response.status);
-      console.log('Chat response headers:', Object.fromEntries(response.headers.entries()));
+        console.log('Chat response status:', response.status);
+        console.log('Chat response headers:', Object.fromEntries(response.headers.entries()));
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('Chat error response:', errorData);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData?.message || response.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          console.error('Chat error response:', errorData);
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorData?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Chat response data:', data);
+        setChatResponse(JSON.stringify(data, null, 2));
+      })(),
+      {
+        pending: 'Sending message...',
+        success: 'Message sent!',
+        error: {
+          render({ data }) {
+            let errorMessage = 'Unknown error occurred';
+            let errorDetails = 'Please check your network connection and try again';
+
+            if (data instanceof Error) {
+              errorMessage = data.message;
+              if (errorMessage.includes('Failed to fetch')) {
+                errorDetails = 'Unable to connect to the server. This could be due to:\n' +
+                  '1. Network connectivity issues\n' +
+                  '2. Server is not running or not accessible\n\n' +
+                  'Troubleshooting steps:\n' +
+                  '1. Open browser developer tools (F12)\n' +
+                  '2. Check the Network tab\n' +
+                  '3. Look for the failed request\n' +
+                  '4. Check if the server is responding\n' +
+                  '5. Verify the server URL is correct\n\n' +
+                  'Please check the server configuration and try again.';
+              }
+            }
+
+            setChatResponse(JSON.stringify({
+              status: 'error',
+              message: 'Error submitting chat',
+              error: errorMessage,
+              details: errorDetails,
+              timestamp: new Date().toISOString()
+            }, null, 2));
+
+            return `Chat failed: ${errorMessage}`;
+          }
+        }
       }
-
-      const data = await response.json();
-      console.log('Chat response data:', data);
-      setChatResponse(JSON.stringify(data, null, 2));
-    } catch (error) {
-      console.error('Chat error:', error);
-      setChatResponse(JSON.stringify({
-        status: 'error',
-        message: 'Error submitting chat',
-        details: error instanceof Error ? error.message : 'Unknown error occurred',
-        timestamp: new Date().toISOString()
-      }, null, 2));
-    }
+    );
   };
 
   return (
@@ -723,11 +763,50 @@ export default function PetForm() {
           )}
 
           {activeTab === 'services' && (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <h1 className="text-4xl font-bold mb-4">🚧 Under Construction 🚧</h1>
+            <div className="flex flex-col items-center justify-center text-center  p-5">
+                {authToken ? (
+                  <p className=" text-green-500">Logged in as: {loginData.username}</p>
+                ) : (
+                  <p className="italic text-red-500">Please log in to start changing pet status</p>
+                )}
+              <h1 className="text-4xl font-extrabold mb-4">🚧 PET STATUS 🚧</h1>
               <p className="text-lg text-gray-600">
                 We're working hard to bring you this feature. Please check back soon!
               </p>
+              <div className="w-1/2 flex flex-col mt-5">
+                <label className="h6">Pet Name</label>
+                <input 
+                  type="text" 
+                  value={formData.selected_pet_id ? pets.find(p => p.pet_id === formData.selected_pet_id)?.name || '' : formData.pet_name}
+                  onChange={e => setFormData({ ...formData, pet_name: e.target.value })} 
+                  className="mb-3 p-2 border border-gray-300 rounded"
+                  disabled={!!formData.selected_pet_id}
+                />
+                <label className="h6">Species</label>
+                <select 
+                  value={formData.species} 
+                  onChange={handleChange('species')} 
+                  className="mb-3 p-2 border border-gray-300 rounded"
+                  disabled={!!formData.selected_pet_id}
+                >
+                  {Object.keys(SPECIES_BREEDS).map((species) => (
+                    <option key={species} value={species}>
+                      {species.charAt(0).toUpperCase() + species.slice(1)}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="relative mb-6">
+                    <label className="h6">Hunger Level</label>
+                    <input id="labels-range-input" type="range" value={formData.hunger_level}  onChange={e => setFormData({ ...formData, hunger_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                </div>
+
+              </div>
             </div>
           )}
 
@@ -754,7 +833,18 @@ export default function PetForm() {
         </div>
       </div>
 
-
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick={false}
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
     </div>
   );
 } 
