@@ -409,7 +409,7 @@ const handleLogin = async (event: React.FormEvent) => {
   };
 
   return (
-    <div className="rounded-3xl flex gap-5 h-screen border-1  border-dashed border-amber-100 p-5">
+    <div className="rounded-3xl flex gap-5 h-screen  border-dashed border-amber-100 p-5">
       
 
       <div className='flex flex-col gap-10 overflow-hidden'>
@@ -763,49 +763,147 @@ const handleLogin = async (event: React.FormEvent) => {
           )}
 
           {activeTab === 'services' && (
-            <div className="flex flex-col items-center justify-center text-center  p-5">
-                {authToken ? (
-                  <p className=" text-green-500">Logged in as: {loginData.username}</p>
-                ) : (
-                  <p className="italic text-red-500">Please log in to start changing pet status</p>
-                )}
-              <h1 className="text-4xl font-extrabold mb-4">🚧 PET STATUS 🚧</h1>
-              <p className="text-lg text-gray-600">
-                We're working hard to bring you this feature. Please check back soon!
-              </p>
-              <div className="w-1/2 flex flex-col mt-5">
-                <label className="h6">Pet Name</label>
-                <input 
-                  type="text" 
-                  value={formData.selected_pet_id ? pets.find(p => p.pet_id === formData.selected_pet_id)?.name || '' : formData.pet_name}
-                  onChange={e => setFormData({ ...formData, pet_name: e.target.value })} 
-                  className="mb-3 p-2 border border-gray-300 rounded"
-                  disabled={!!formData.selected_pet_id}
-                />
-                <label className="h6">Species</label>
-                <select 
-                  value={formData.species} 
-                  onChange={handleChange('species')} 
-                  className="mb-3 p-2 border border-gray-300 rounded"
-                  disabled={!!formData.selected_pet_id}
-                >
-                  {Object.keys(SPECIES_BREEDS).map((species) => (
-                    <option key={species} value={species}>
-                      {species.charAt(0).toUpperCase() + species.slice(1)}
-                    </option>
-                  ))}
-                </select>
+            <div className="flex flex-col p-5 justify-center items-center text-center">
+              <div>
+                  {authToken ? (
+                    <p className=" text-green-500">Logged in as: {loginData.username}</p>
+                  ) : (
+                    <p className="italic text-red-500">Please log in to start changing pet status</p>
+                  )}
+                <h1 className="text-4xl font-extrabold mb-4">🚧 PET STATUS 🚧</h1>
+                <p className="text-lg text-gray-600">
+                  We're working hard to bring you this feature. Please check back soon!
+                </p>
+              </div>
+              <div className="w-full flex flex-row mt-5 gap-10 ">
+                {/* basic deets */}
 
-                <div className="relative mb-6">
-                    <label className="h6">Hunger Level</label>
-                    <input id="labels-range-input" type="range" value={formData.hunger_level}  onChange={e => setFormData({ ...formData, hunger_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                <div className="w-full flex flex-col mb-5">
+                  <h2 className='text-2xl'>Pet Details</h2>
+                  <hr className="my-4 border-gray-300 dark:border-gray-700"/>
+
+                  <label className="h6 text-left">Pet Name</label>
+                  <input 
+                    type="text" 
+                    value={formData.selected_pet_id ? pets.find(p => p.pet_id === formData.selected_pet_id)?.name || '' : formData.pet_name}
+                    onChange={e => setFormData({ ...formData, pet_name: e.target.value })} 
+                    className="mb-3 p-2 border border-gray-300 rounded"
+                    disabled={!!formData.selected_pet_id}
+                  />
+                  <label className="h6 text-left">Species</label>
+                  <select 
+                    value={formData.species} 
+                    onChange={handleChange('species')} 
+                    className="mb-3 p-2 border border-gray-300 rounded"
+                    disabled={!!formData.selected_pet_id}
+                  >
+                    {Object.keys(SPECIES_BREEDS).map((species) => (
+                      <option key={species} value={species}>
+                        {species.charAt(0).toUpperCase() + species.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="h6 text-left">Breed</label>
+                  <select 
+                    value={formData.breed}
+                    onChange={handleChange('breed')}
+                    className="mb-3 p-2 border border-gray-300 rounded"
+                    disabled={!!formData.selected_pet_id}
+                  >
+                    {formData.species &&
+                      SPECIES_BREEDS[formData.species as keyof typeof SPECIES_BREEDS].map((breed) => (
+                        <option key={breed} value={breed}>
+                          {breed}
+                        </option>
+                      ))}
+                  </select>
+
+                  <label className="h6 text-left">Mood</label>
+                  <select 
+                    value={formData.mood} 
+                    onChange={handleChange('mood')} 
+                    className="mb-3 p-2 border border-gray-300 rounded"
+                    disabled={!!formData.selected_pet_id}
+                  >
+                    {MOODS.map((mood) => (
+                      <option key={mood} value={mood}>
+                        {mood}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <label className="h6 text-left">Age Group</label>
+                  <select 
+                    value={formData.age_group} 
+                    onChange={handleChange('age_group')} 
+                    className="mb-3 p-2 border border-gray-300 rounded"
+                    disabled={!!formData.selected_pet_id}
+                  >
+                    {AGE_GROUPS.map((ageGroup) => (
+                      <option key={ageGroup} value={ageGroup}>
+                        {ageGroup}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
+                {/* parameters */}
+                <div className="w-full flex flex-col mb-5">
+                  <h2 className='text-2xl'>Pet Parameters</h2>
+                  <hr className="my-4 border-gray-300 dark:border-gray-700"/>
+
+                  {/* hunger level */}
+                  <div className="relative mb-6">
+                      <label className="h6">Hunger Level</label>
+                      <input id="labels-range-input" type="range" value={formData.hunger_level}  onChange={e => setFormData({ ...formData, hunger_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                  </div>
+                  {/* Energy Level */}
+                  <div className="relative mb-6">
+                      <label className="h6">Energy Level</label>
+                      <input id="labels-range-input" type="range" value={formData.energy_level}  onChange={e => setFormData({ ...formData, energy_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                  </div>
+                  {/* Hygiene Level */}
+                  <div className="relative mb-6">
+                      <label className="h6">Hygiene Level</label>
+                      <input id="labels-range-input" type="range" value={formData.hygiene_level}  onChange={e => setFormData({ ...formData, hygiene_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                  </div>
+                  {/* Health Level */}
+                  <div className="relative mb-6">
+                      <label className="h6">Health Level</label>
+                      <input id="labels-range-input" type="range" value={formData.health_level}  onChange={e => setFormData({ ...formData, health_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                  </div>
+                  {/* Happy Level */}
+                  <div className="relative mb-6">
+                      <label className="h6">Happiness Level</label>
+                      <input id="labels-range-input" type="range" value={formData.happinness_level}  onChange={e => setFormData({ ...formData, happinness_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
