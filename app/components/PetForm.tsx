@@ -159,6 +159,7 @@ export default function PetForm() {
       setFormData({
         ...formData,
         sick: sickValue,
+        sickness: sickValue === 0 ? '' : formData.sickness,
         sickness_severity: sickValue === 0 ? 0 : formData.sickness_severity,
       });
     } 
@@ -412,7 +413,7 @@ const handleLogin = async (event: React.FormEvent) => {
       stress_level: formData.stress_level,
       is_sick: formData.sick === 1 ? 1 : 0,
       sickness_severity: formData.sickness_severity,
-      sickness_type: formData.sickness,
+      sickness_type: formData.sick === 0 ? '' : formData.sickness,
     };
 
     console.log('Payload:', payload);
