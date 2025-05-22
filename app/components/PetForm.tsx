@@ -34,7 +34,7 @@ const SPECIES_BREEDS = {
 };
 
 // Mood options
-const MOODS = ['Happy', 'Calm', 'Energetic', 'Anxious', 'Playful', 'Aggressive'];
+const MOODS = ['Happy', 'Calm', 'Energetic', 'Anxious', 'Playful', 'Aggressive', 'Sad'];
 
 // Educational levels
 const EDUCATIONAL_LEVELS = ['Basic', 'Intermediate', 'Advanced', 'Expert'];
@@ -44,6 +44,9 @@ const DEFAULT_COMMANDS = ['Sit', 'Stay', 'Come', 'Down', 'Heel'];
 
 // Age groups
 const AGE_GROUPS = ['1 week old', '15 days old', '1 month old', '3 months old', 'Adult'];
+
+// Sickness
+const SICKNESS = ['flu', 'cold', 'broken bones', 'hyperthermia']
 
 interface FormData {
   pet_name: string;
@@ -63,7 +66,11 @@ interface FormData {
   selected_pet_id?: string;
   age_group: string;
   health_level: number;
-  happinness_level: number;
+  happiness_level: number;
+  sickness_severity: number;
+  sick: number;
+  stress_level?: number;
+  sickness: string;
 }
 
 interface LoginData {
@@ -84,6 +91,7 @@ interface Pet {
   experience: string;
   created_at: string;
   updated_at: string;
+
 }
 
 export default function PetForm() {
@@ -110,11 +118,15 @@ export default function PetForm() {
     selected_pet_id: '',
     age_group: 'Adult',
     health_level: 50,
-    happinness_level: 50,
+    happiness_level: 50,
+    sickness_severity: 0.00,
+    sick: 0,
+    stress_level: 50,
+    sickness: '',
   });
   const [loginData, setLoginData] = useState<LoginData>({
-    username: 'admin',
-    password: 'admin@123',
+    username: 'adminj',
+    password: 'admin123',
   });
   const [authToken, setAuthToken] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
@@ -122,6 +134,8 @@ export default function PetForm() {
   const [petStateResponse, setPetStateResponse] = useState<string>('');
   const [chatResponse, setChatResponse] = useState<string>('');
   const [activeTab, setActiveTab] = useState('about');
+  const [petStatus, setPetStatus] = useState<any>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   // Add useEffect to fetch pets when authToken changes
   useEffect(() => {
     if (authToken) {
@@ -139,7 +153,16 @@ export default function PetForm() {
         other_breed: '',
         breed: SPECIES_BREEDS[event.target.value as keyof typeof SPECIES_BREEDS][0]
       });
-    } else {
+    } 
+    else if (field === 'sick') {
+      const sickValue = Number(event.target.value);
+      setFormData({
+        ...formData,
+        sick: sickValue,
+        sickness_severity: sickValue === 0 ? 0 : formData.sickness_severity,
+      });
+    } 
+    else {
       setFormData({
         ...formData,
         [field]: event.target.value,
@@ -209,6 +232,56 @@ export default function PetForm() {
       setIsLoadingPets(false);
     }
   };
+
+    const fetchPetStatus = async () => {
+    if (!authToken || !formData.selected_pet_id) return;
+    setIsLoadingStatus(true);
+    setPetStatus(null);
+    try {
+      const response = await fetch(`/api/pet-status?pet_id=${formData.selected_pet_id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const statusdata = await response.json();
+      console.log('Pet status:', statusdata);
+
+      // Set full data to petStatus (if needed elsewhere)
+      setPetStatus(statusdata);
+
+      // Set specific values into formData
+      setFormData(prev => ({
+        ...prev,
+        hunger_level: Number(statusdata.hunger_level),
+        happiness_level: Number(statusdata.happiness_level),
+        health_level: Number(statusdata.health_level),
+        hygiene_level: Number(statusdata.cleanliness_level),
+        energy_level: Number(statusdata.energy_level),
+        stress_level: Number(statusdata.stress_level),
+        mood: statusdata.current_mood.charAt(0).toUpperCase() + statusdata.current_mood.slice(1),
+        sickness_severity: Number(statusdata.sickness_severity),
+        sick: statusdata.is_sick === '1' ? 1 : 0,
+        sickness: statusdata.sickness_type,
+      }));
+
+    } catch (error) {
+      console.error(error);
+      setPetStatus({ status: 'error', message: 'Failed to fetch pet status', error });
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+  useEffect(() => {
+    if (activeTab === 'services' && formData.selected_pet_id && authToken) {
+      fetchPetStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, formData.selected_pet_id, authToken]);
+
 
 const handleLogin = async (event: React.FormEvent) => {
   event.preventDefault();
@@ -303,21 +376,87 @@ const handleLogin = async (event: React.FormEvent) => {
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      setPetStateResponse(JSON.stringify(data, null, 2));
-    } catch (error) {
-      setPetStateResponse('Error submitting form: ' + error);
+      event.preventDefault();
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(formData),
+        });
+        const data = await response.json();
+        setPetStateResponse(JSON.stringify(data, null, 2));
+      } catch (error) {
+        setPetStateResponse('Error submitting form: ' + error);
+      }
+    };
+
+
+
+
+  const handleChangeStatus = async () => {
+    if (!authToken || !formData.selected_pet_id) {
+      toast.error('Please login and select a pet first.');
+      return;
     }
+
+    const payload = {
+      hunger_level: formData.hunger_level,
+      happiness_level: formData.happiness_level,
+      health_level: formData.health_level,
+      energy_level: formData.energy_level,
+      cleanliness_level: formData.hygiene_level,
+      current_mood: formData.mood.toLowerCase(),
+      stress_level: formData.stress_level,
+      is_sick: formData.sick === 1 ? 1 : 0,
+      sickness_severity: formData.sickness_severity,
+      sickness_type: formData.sickness,
+    };
+
+    console.log('Payload:', payload);
+    console.log('Auth token:', authToken ? 'Present' : 'Missing');
+    console.log('Pet ID:', formData.selected_pet_id);
+
+    await toast.promise(
+      (async () => {
+        const response = await fetch('/api/pet-status', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            pet_id: formData.selected_pet_id,
+            ...payload,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          console.error('Failed to update pet status:', data);
+          throw new Error(data?.message || 'Failed to update pet status');
+        }
+        console.log('Pet status updated successfully:', data);
+        setPetStateResponse(JSON.stringify(data, null, 2));
+        return data;
+      })(),
+      {
+        pending: 'Updating pet status...',
+        success: 'Pet status updated successfully!',
+        error: {
+          render({ data }) {
+            let errorMessage = 'Unknown error occurred';
+            if (data instanceof Error) {
+              errorMessage = data.message;
+            }
+            setPetStateResponse('Error: ' + errorMessage);
+            return `Error updating pet status: ${errorMessage}`;
+          }
+        }
+      }
+    );
   };
 
   const handleChatSubmit = async (event: React.FormEvent) => {
@@ -691,8 +830,13 @@ const handleLogin = async (event: React.FormEvent) => {
                   </Typography>
                 </Collapse>
                 <div className='flex items-center justify-between cursor-pointer'>
-                  <button type="submit" disabled onClick={handleLogin} className=" cursor-pointer mt-5 text-center w-[150px] inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                      CHANGE STATUS
+                  <button
+                    type="button"
+                    onClick={handleChangeStatus}
+                    disabled={!authToken || !formData.selected_pet_id}
+                    className="cursor-pointer mt-5 text-center w-[150px] inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  >
+                    CHANGE STATUS
                   </button>
                 </div>
             </div>
@@ -794,7 +938,12 @@ const handleLogin = async (event: React.FormEvent) => {
                   <select 
                     value={formData.species} 
                     onChange={handleChange('species')} 
-                    className="mb-3 p-2 border border-gray-300 rounded"
+                    className={`
+                      mb-3 p-2 
+                      border border-gray-300 
+                      rounded
+                      ${formData.selected_pet_id ? 'bg-[#330606]' : ''}
+                    `}
                     disabled={!!formData.selected_pet_id}
                   >
                     {Object.keys(SPECIES_BREEDS).map((species) => (
@@ -808,7 +957,12 @@ const handleLogin = async (event: React.FormEvent) => {
                   <select 
                     value={formData.breed}
                     onChange={handleChange('breed')}
-                    className="mb-3 p-2 border border-gray-300 rounded"
+                    className={`
+                      mb-3 p-2 
+                      border border-gray-300 
+                      rounded
+                      ${formData.selected_pet_id ? 'bg-[#330606]' : ''}
+                    `}
                     disabled={!!formData.selected_pet_id}
                   >
                     {formData.species &&
@@ -824,7 +978,7 @@ const handleLogin = async (event: React.FormEvent) => {
                     value={formData.mood} 
                     onChange={handleChange('mood')} 
                     className="mb-3 p-2 border border-gray-300 rounded"
-                    disabled={!!formData.selected_pet_id}
+                    // disabled={!!formData.selected_pet_id}
                   >
                     {MOODS.map((mood) => (
                       <option key={mood} value={mood}>
@@ -837,7 +991,12 @@ const handleLogin = async (event: React.FormEvent) => {
                   <select 
                     value={formData.age_group} 
                     onChange={handleChange('age_group')} 
-                    className="mb-3 p-2 border border-gray-300 rounded"
+                    className={`
+                      mb-3 p-2 
+                      border border-gray-300 
+                      rounded
+                      ${formData.selected_pet_id ? 'bg-[#330606]' : ''}
+                    `}
                     disabled={!!formData.selected_pet_id}
                   >
                     {AGE_GROUPS.map((ageGroup) => (
@@ -846,6 +1005,33 @@ const handleLogin = async (event: React.FormEvent) => {
                       </option>
                     ))}
                   </select>
+
+                  <label className="h6 text-left">Should the pet be sick?</label>
+                    <select 
+                      value={formData.sick} 
+                      onChange={handleChange('sick')} 
+                      className="mb-3 p-2 border border-gray-300 rounded"
+                    >
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+
+                    {formData.sick === 1 && (
+                      <>
+                        <label className="h6 text-left">What sickness?</label>
+                        <select
+                          value={formData.sickness}
+                          onChange={handleChange('sickness')}
+                          className="mb-3 p-2 border border-gray-300 rounded"
+                        >
+                          {SICKNESS.map((sickness) => (
+                            <option key={sickness} value={sickness}>
+                              {sickness}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
                 </div>
 
                 {/* parameters */}
@@ -896,12 +1082,41 @@ const handleLogin = async (event: React.FormEvent) => {
                   {/* Happy Level */}
                   <div className="relative mb-6">
                       <label className="h6">Happiness Level</label>
-                      <input id="labels-range-input" type="range" value={formData.happinness_level}  onChange={e => setFormData({ ...formData, happinness_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                      <input id="labels-range-input" type="range" value={formData.happiness_level}  onChange={e => setFormData({ ...formData, happiness_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
                       <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
                       <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
                       <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
                       <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
                       <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                  </div>
+                  {/* Sickness_Severity */}
+                  <div className="relative mb-6">
+                      <label className="h6">Sickness Severity</label>
+                          <input
+                            id="labels-range-input"
+                            type="range"
+                            value={formData.sickness_severity}
+                            onChange={e => setFormData({ ...formData, sickness_severity: Number(e.target.value) })}
+                            min="0"
+                            max="100"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                            disabled={formData.sick === 0.00}
+                          />
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
+                  </div>
+                  {/* Stress Level */}
+                  <div className='relative mb-6'>
+                    <label className="h6">Stress Level</label>
+                    <input id="labels-range-input" type="range" value={formData.stress_level}  onChange={e => setFormData({ ...formData, stress_level: Number(e.target.value) })}  min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"/>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">0</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">25</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">50</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">75</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">100</span>
                   </div>
                 </div>
               </div>
