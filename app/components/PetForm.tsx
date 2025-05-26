@@ -136,6 +136,23 @@ export default function PetForm() {
   const [activeTab, setActiveTab] = useState('about');
   const [petStatus, setPetStatus] = useState<any>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [interactions, setInteractions] = useState<any[]>([]);
+  const [selectedInteractionId, setSelectedInteractionId] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/pet-interactions')
+      .then(res => res.json())
+      .then(data => {
+        // If API returns { data: [...] }
+        const list = Array.isArray(data) ? data : data.data || [];
+        setInteractions(list);
+        if (list.length > 0) setSelectedInteractionId(list[0].interaction_type_id);
+      });
+  }, []);
+    const selectedInteraction = interactions.find(
+    (i) => i.interaction_type_id === selectedInteractionId
+  );
+
   // Add useEffect to fetch pets when authToken changes
   useEffect(() => {
     if (authToken) {
@@ -872,6 +889,18 @@ const handleLogin = async (event: React.FormEvent) => {
             </button>
           </li>
           <li className="me-2">
+              <button
+                onClick={() => setActiveTab('interactions')}
+                className={`inline-block p-4 ${
+                  activeTab === 'interactions'
+                    ? 'text-blue-600 dark:text-blue-500 dark:bg-gray-800'
+                    : 'hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Interactions
+              </button>
+          </li>
+          <li className="me-2">
             <button
               onClick={() => setActiveTab('statistics')}
               className={`inline-block p-4 ${
@@ -1150,6 +1179,56 @@ const handleLogin = async (event: React.FormEvent) => {
                   }} className="mb-3 text-gray-500 dark:text-gray-400">{loginResponse}</pre>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'interactions' && (
+            <div>
+              <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                Interactions
+              </h2>
+              <p className="mb-3 text-gray-500 dark:text-gray-400">
+                Here you can view and manage the interactions available for your pets.
+              </p>
+              {interactions.length > 0 ? (
+                <div>
+                  <label className="block mb-2 font-bold">Select Interaction:</label>
+                  <select
+                    className="mb-4 p-2 border rounded focus:text-gray-800"
+                    value={selectedInteractionId}
+                    onChange={e => {
+                      setSelectedInteractionId(e.target.value);
+                      e.target.blur();
+                    }}
+                  >
+                    {interactions.map((interaction) => (
+                      <option key={interaction.interaction_type_id} value={interaction.interaction_type_id}>
+                        {interaction.interaction_name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedInteraction && (
+                    <div className="p-4 border rounded bg-gray-50  dark:bg-gray-700">
+                      <div><strong>ID:</strong> {selectedInteraction.interaction_type_id}</div>
+                      <div><strong>Category:</strong> {selectedInteraction.category}</div>
+                      <div><strong>Base Points:</strong> {selectedInteraction.base_points}</div>
+                      <div><strong>Max Daily Count:</strong> {selectedInteraction.max_daily_count}</div>
+                      <div><strong>Required Subscription:</strong> {selectedInteraction.required_subscription}</div>
+                      <div><strong>Description:</strong> {selectedInteraction.description}</div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">No interactions available.</p>
+              )}
+              <button
+                type="button"
+                // onClick={handleInteractionSubmit}
+                disabled={!authToken || !formData.selected_pet_id}
+                className="mt-5 text-center w-[150px] inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                Interact with:  {pets.find(p => p.pet_id === formData.selected_pet_id)?.name || 'Pet'}
+              </button>
             </div>
           )}
         </div>
