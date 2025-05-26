@@ -827,17 +827,17 @@ const handleLogin = async (event: React.FormEvent) => {
                 <p className=" font-normal text-gray-700 dark:text-gray-400">Simulate the changing status of a pet based on the current status of the pet</p>
                 <Collapse in={isExpanded} timeout={500}>
                   <Typography variant="h6" className=" text-blue-600">
-                    <strong>{loginData.username.charAt(0).toUpperCase() + loginData.username.slice(1)}</strong>. This tab is under development. Please stay tuned!
+                    Hello <strong>{loginData.username.charAt(0).toUpperCase() + loginData.username.slice(1)}</strong>
                   </Typography>
                 </Collapse>
                 <div className='flex items-center justify-between cursor-pointer'>
                   <button
                     type="button"
-                    onClick={handleChangeStatus}
+                    onClick={() => setActiveTab('services')}
                     disabled={!authToken || !formData.selected_pet_id}
                     className="cursor-pointer mt-5 text-center w-[150px] inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                   >
-                    CHANGE STATUS
+                    Proceed to Status
                   </button>
                 </div>
             </div>
@@ -915,9 +915,9 @@ const handleLogin = async (event: React.FormEvent) => {
                   ) : (
                     <p className="italic text-red-500">Please log in to start changing pet status</p>
                   )}
-                <h1 className="text-4xl font-extrabold mb-4">🚧 PET STATUS 🚧</h1>
+                <h1 className="text-4xl font-extrabold mb-4">🐾 PET STATUS 🐶</h1>
                 <p className="text-lg text-gray-600">
-                  We're working hard to bring you this feature. Please check back soon!
+                  Here you can change the status of your pet.
                 </p>
               </div>
               <div className="w-full flex flex-row mt-5 gap-10 ">
@@ -1121,6 +1121,14 @@ const handleLogin = async (event: React.FormEvent) => {
                   </div>
                 </div>
               </div>
+                <button
+                  type="button"
+                  onClick={handleChangeStatus}
+                  disabled={!authToken || !formData.selected_pet_id}
+                  className="cursor-pointer mt-5 text-center w-[150px] inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  CHANGE STATUS
+                </button>
             </div>
           )}
 
