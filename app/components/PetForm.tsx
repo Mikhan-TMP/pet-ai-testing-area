@@ -125,7 +125,7 @@ export default function PetForm() {
     sickness: '',
   });
   const [loginData, setLoginData] = useState<LoginData>({
-    username: 'adminj',
+    username: 'sample',
     password: 'admin123',
   });
   const [authToken, setAuthToken] = useState<string>('');
