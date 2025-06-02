@@ -1,8 +1,17 @@
+// app/api/items/[categoryId]/items/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
+
+// Define the context type manually
+type Context = {
+  params: {
+    categoryId: string;
+  };
+};
 
 export async function GET(
   request: NextRequest,
-  context: { params: { categoryId: string } }
+  context: Context
 ) {
   const { categoryId } = context.params;
   const apiUrl = `http://54.180.147.58/aipet/api/v1/store/${categoryId}/items`;
@@ -11,7 +20,7 @@ export async function GET(
   try {
     const response = await fetch(apiUrl, {
       headers: {
-        'Authorization': authHeader || '',
+        Authorization: authHeader || '',
       },
     });
 
