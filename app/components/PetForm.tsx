@@ -43,7 +43,7 @@ const EDUCATIONAL_LEVELS = ['Basic', 'Intermediate', 'Advanced', 'Expert'];
 const DEFAULT_COMMANDS = ['Sit', 'Stay', 'Come', 'Down', 'Heel'];
 
 // Age groups
-const AGE_GROUPS = ['1 week old', '15 days old', '1 month old', '3 months old', 'Adult'];
+// const AGE_GROUPS = ['1 week old', '15 days old', '1 month old', '3 months old', 'Adult'];
 
 // Sickness
 const SICKNESS = ['flu', 'cold', 'broken bones', 'hyperthermia']
@@ -138,20 +138,69 @@ export default function PetForm() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [interactions, setInteractions] = useState<any[]>([]);
   const [selectedInteractionId, setSelectedInteractionId] = useState<string>('');
-
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [items, setItems] = useState<any[]>([]);
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const selectedItem = items.find(item => (item.id || item.item_id) === selectedItemId);
+  const LIFE_STAGE_LABELS: Record<number, string> = {
+    1: 'Baby',
+    2: 'Child',
+    3: 'Adult',
+  };
+useEffect(() => {
+  if (!authToken) return; // Only fetch if logged in
+  fetch('/api/pet-interactions', {
+    headers: {
+      'Authorization': `Bearer ${authToken}`,
+    },
+  })
+    .then(res => res.json())
+    .then(data => {
+      // If API returns { data: [...] }
+      const list = Array.isArray(data) ? data : data.data || [];
+      setInteractions(list);
+      if (list.length > 0) setSelectedInteractionId(list[0].interaction_type_id);
+    });
+}, [authToken]);
+const selectedInteraction = interactions.find(
+  (interaction) => interaction.interaction_type_id === selectedInteractionId
+);
+  // Fetch categories on mount
   useEffect(() => {
-    fetch('/api/pet-interactions')
+    if (!authToken) return; // Only fetch if logged in
+    fetch('/api/items/categories', {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    })
       .then(res => res.json())
       .then(data => {
-        // If API returns { data: [...] }
-        const list = Array.isArray(data) ? data : data.data || [];
-        setInteractions(list);
-        if (list.length > 0) setSelectedInteractionId(list[0].interaction_type_id);
+        console.log('Categories:', data);
+        setCategories(data.data || []);
       });
-  }, []);
-    const selectedInteraction = interactions.find(
-    (i) => i.interaction_type_id === selectedInteractionId
-  );
+  }, [authToken]);
+
+  // Update fetching items to use category_id
+  useEffect(() => {
+    if (!selectedCategoryId || !authToken) {
+      setItems([]);
+      setSelectedItemId('');
+      return;
+    }
+    fetch(`/api/items/${selectedCategoryId}/items`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    })
+      .then(res => res.json())
+      .then(data => {
+        console.log('Items:', data);
+        setItems(data.data || []);
+        setSelectedItemId('');
+      });
+  }, [selectedCategoryId, authToken]);
+  
 
   // Add useEffect to fetch pets when authToken changes
   useEffect(() => {
@@ -234,7 +283,8 @@ export default function PetForm() {
       if (data.pets.length > 0) {
         setFormData(prev => ({
           ...prev,
-          selected_pet_id: data.pets[0].pet_id
+          selected_pet_id: data.pets[0].pet_id,
+          age_group: LIFE_STAGE_LABELS[data.pets[0].life_stage_id] || 'Adult',
         }));
       }
     } catch (error) {
@@ -862,7 +912,7 @@ const handleLogin = async (event: React.FormEvent) => {
       {/* END STATUS */}
       </div>
       
-      <div className=" overflow-hidden w-full bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div className="overflow-y-scroll w-full bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
         <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 rounded-t-lg bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:bg-gray-800">
           <li className="me-2">
             <button
@@ -1018,9 +1068,9 @@ const handleLogin = async (event: React.FormEvent) => {
                   </select>
                   
                   <label className="h6 text-left">Age Group</label>
-                  <select 
-                    value={formData.age_group} 
-                    onChange={handleChange('age_group')} 
+                  <select
+                    value={formData.age_group}
+                    onChange={handleChange('age_group')}
                     className={`
                       mb-3 p-2 
                       border border-gray-300 
@@ -1029,12 +1079,13 @@ const handleLogin = async (event: React.FormEvent) => {
                     `}
                     disabled={!!formData.selected_pet_id}
                   >
-                    {AGE_GROUPS.map((ageGroup) => (
-                      <option key={ageGroup} value={ageGroup}>
-                        {ageGroup}
+                    {[1, 2, 3].map((stageId) => (
+                      <option key={stageId} value={LIFE_STAGE_LABELS[stageId]}>
+                        {LIFE_STAGE_LABELS[stageId]}
                       </option>
                     ))}
                   </select>
+                  
 
                   <label className="h6 text-left">Should the pet be sick?</label>
                     <select 
@@ -1184,6 +1235,11 @@ const handleLogin = async (event: React.FormEvent) => {
 
           {activeTab === 'interactions' && (
             <div>
+                {authToken ? (
+                  <p className=" text-green-500">Logged in as: {loginData.username}</p>
+                ) : (
+                  <p className="italic text-red-500">Please log in to view and start interactions</p>
+                )}
               <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                 Interactions
               </h2>
@@ -1201,26 +1257,115 @@ const handleLogin = async (event: React.FormEvent) => {
                       e.target.blur();
                     }}
                   >
+                    <option value="">-- Pick Interaction --</option>
                     {interactions.map((interaction) => (
+                      
                       <option key={interaction.interaction_type_id} value={interaction.interaction_type_id}>
                         {interaction.interaction_name}
                       </option>
                     ))}
                   </select>
                   {selectedInteraction && (
-                    <div className="p-4 border rounded bg-gray-50  dark:bg-gray-700">
-                      <div><strong>ID:</strong> {selectedInteraction.interaction_type_id}</div>
-                      <div><strong>Category:</strong> {selectedInteraction.category}</div>
-                      <div><strong>Base Points:</strong> {selectedInteraction.base_points}</div>
-                      <div><strong>Max Daily Count:</strong> {selectedInteraction.max_daily_count}</div>
-                      <div><strong>Required Subscription:</strong> {selectedInteraction.required_subscription}</div>
-                      <div><strong>Description:</strong> {selectedInteraction.description}</div>
+                    <div className='flex gap-4 justify-center items-center mb-4'>
+                      <div className="p-4 border rounded bg-gray-50  dark:bg-gray-700 w-full">
+                        <div><strong>ID:</strong> {selectedInteraction.interaction_type_id}</div>
+                        <div><strong>Category:</strong> {selectedInteraction.category}</div>
+                        <div><strong>Base Points:</strong> {selectedInteraction.base_points}</div>
+                        <div><strong>Max Daily Count:</strong> {selectedInteraction.max_daily_count}</div>
+                        <div><strong>Required Subscription:</strong> {selectedInteraction.required_subscription}</div>
+                        <div><strong>Description:</strong> {selectedInteraction.description}</div>
+                      </div>
                     </div>
                   )}
                 </div>
               ) : (
                 <p className="text-gray-500 dark:text-gray-400">No interactions available.</p>
               )}
+              {categories.length > 0 ? (
+                <>
+                  {/* Category Dropdown */}
+                  <div className="mb-4">
+                    <label className="block mb-2 font-bold">Select Category:</label>
+                    <select
+                      className="mb-2 p-2 border rounded focus:text-gray-800"
+                      value={selectedCategoryId}
+                      onChange={e => {
+                        setSelectedCategoryId(e.target.value);
+                        e.target.blur();
+                      }}
+                    >
+                      <option value="">-- Select Category --</option>
+                      {categories.map(cat => (
+                        <option key={cat.category_id} value={cat.category_id}>
+                          {cat.category_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Item Dropdown */}
+                  <div className="mb-4">
+                    <label className="block mb-2 font-bold">Select Item:</label>
+                    <select
+                      className="mb-2 p-2 border rounded focus:text-gray-800"
+                      value={selectedItemId}
+                      onChange={e => {
+                        setSelectedItemId(e.target.value);
+                        e.target.blur();
+                      }}
+                      disabled={!selectedCategoryId || items.length === 0}
+                    >
+                      <option value="">-- Select Item --</option>
+                      {items.map(item => (
+                        <option key={item.id || item.item_id} value={item.id || item.item_id}>
+                          {item.name || item.item_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                    {selectedItem && (
+                      <div className="p-4 border rounded bg-gray-50 dark:bg-gray-700 w-full mb-4">
+                        <div><strong>Name:</strong> {selectedItem.item_name}</div>
+                        <div><strong>Description:</strong> {selectedItem.description}</div>
+                        <div><strong>Category:</strong> {selectedItem.category_name}</div>
+                        <div><strong>Price:</strong> {selectedItem.final_price}</div>
+                        <div><strong>Rarity:</strong> {selectedItem.rarity}</div>
+                        <div><strong>Tradable:</strong> {selectedItem.is_tradable === "1" ? "Yes" : "No"}</div>
+                        <div><strong>Buyable:</strong> {selectedItem.is_buyable === "1" ? "Yes" : "No"}</div>
+                        <div><strong>Effects:</strong>
+                          {selectedItem.effects && selectedItem.effects.length > 0 ? (
+                            <ul className="ml-4">
+                              {selectedItem.effects.map((effect: any) => (
+                                <li key={effect.effect_id}>
+                                  <strong>{effect.effect_name}</strong> ({effect.effect_type})<br />
+                                  {effect.effect_values && (
+                                    <span>
+                                      {JSON.parse(effect.effect_values).map((val: any, idx: number) =>
+                                        Object.entries(val).map(([k, v]) => (
+                                          <span key={k + idx}>{k}: {v}&nbsp;</span>
+                                        ))
+                                      )}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span>None</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  {/* Show if selected category but no items */}
+                  {selectedCategoryId && items.length === 0 && (
+                    <p className="text-gray-500 dark:text-gray-400">No items available for this category.</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">No categories available.</p>
+              )}
+
+
               <button
                 type="button"
                 // onClick={handleInteractionSubmit}
